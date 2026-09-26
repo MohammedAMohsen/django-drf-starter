@@ -1,0 +1,36 @@
+# The API process. Install as /etc/systemd/system/myproject-web.service, then:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now myproject-web
+[Unit]
+Description=MyProject API (gunicorn)
+After=network.target postgresql.service redis-server.service
+Wants=postgresql.service redis-server.service
+
+[Service]
+User=myproject
+Group=myproject
+WorkingDirectory=/srv/myproject/app/backend
+# .env is read by settings.py itself (python-dotenv), so no secret appears in
+# a unit file or in `systemctl show`.
+#
+# --max-requests recycles a worker after 1000 requests, handing its memory
+# back: image processing can leave a worker holding hundreds of megabytes for
+# the life of the process. The jitter keeps the three from recycling together.
+ExecStart=/srv/myproject/app/backend/.venv/bin/gunicorn config.wsgi:application \
+    --bind 127.0.0.1:8001 \
+    --workers 3 \
+    --timeout 60 \
+    --max-requests 1000 \
+    --max-requests-jitter 100 \
+    --access-logfile - \
+    --error-logfile -
+Restart=always
+RestartSec=3
+# Hardening: the process can neither gain privileges nor write outside its
+# own tree, whatever a bug in the application does.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/srv/myproject
+
+[Install]
+WantedBy=multi-user.target

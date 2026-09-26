@@ -1,0 +1,25 @@
+[Unit]
+Description=MyProject background worker (Celery, with the beat scheduler)
+After=network.target redis-server.service postgresql.service
+Wants=redis-server.service postgresql.service
+
+[Service]
+User=myproject
+Group=myproject
+WorkingDirectory=/srv/myproject/app/backend
+# -B runs the beat scheduler inside this worker. Correct for exactly one
+# worker process, which is what a single server runs. Add a second worker
+# and every scheduled job fires twice — beat then needs a unit of its own.
+ExecStart=/srv/myproject/app/backend/.venv/bin/celery -A config worker -B \
+    --loglevel=info \
+    --concurrency=2 \
+    --schedule=/srv/myproject/celerybeat-schedule
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/srv/myproject
+
+[Install]
+WantedBy=multi-user.target

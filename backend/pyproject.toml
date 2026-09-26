@@ -1,0 +1,26 @@
+# Only ruff lives here. The project has no build step and no packaging.
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [".venv", "migrations"]
+
+[tool.ruff.lint]
+# Deliberately narrow. These six catch real mistakes:
+#   E, W  — syntax and whitespace errors
+#   F     — pyflakes: unused imports, undefined names, shadowed variables
+#   I     — import order, so a merge never fights over it
+#   UP    — syntax that a newer Python made obsolete
+#   B     — bugbear: mutable default arguments, except-without-raise, and
+#           the other quiet traps
+#
+# Ruff's wider rule sets argue with Django's own idioms — it wants ClassVar
+# on every `fields = (...)` and objects to `except Exception` even where the
+# code deliberately catches everything. A linter nobody can keep green is a
+# linter everybody turns off.
+select = ["E", "W", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# Settings are read top to bottom and the conditional blocks reassign on
+# purpose; migrations are generated.
+"config/settings.py" = ["E501"]
+"apps/accounts/tests.py" = ["E501"]

@@ -1,0 +1,137 @@
+name: CI
+
+# Checks, not deployment. Every push and pull request against main runs the
+# same tests you would run locally, in a clean environment — so a broken
+# commit is caught here, before it ever reaches deploy.sh. Nothing in this
+# file touches a server; there is no key here that could.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (Django)
+    runs-on: ubuntu-latest
+
+    # A real PostgreSQL, thrown away when the job ends. TESTING (detected by
+    # settings.py) switches the cache to locmem, Celery to eager and mail to
+    # an in-memory outbox, so nothing here needs Redis or an SMTP account —
+    # only the database is real.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ci
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # What a CI run needs and nothing more. SECRET_KEY only has to be
+      # present; Django never checks its strength.
+      SECRET_KEY: ci-only-not-a-real-secret
+      # There is no .env in a fresh checkout, so DEBUG is False here — and
+      # settings.py refuses to start with DEBUG off and no ALLOWED_HOSTS.
+      # `manage.py test` alone would survive (TESTING skips that guard), but
+      # every other step needs this. The --deploy steps below override it.
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      DB_NAME: ci
+      DB_USER: ci
+      DB_PASSWORD: ci
+      DB_HOST: localhost
+      DB_PORT: 5432
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      # Known vulnerabilities in the pinned versions. This is the one class
+      # of problem no code review finds: the code is correct, the library
+      # under it is not. It runs on every push because a dependency that
+      # was clean last month may not be today.
+      # `social-auth-core` is pulled in by djoser and carries five known
+      # CVEs with no fixed release compatible with djoser's pin. None of the
+      # affected code runs here: `social_django` is not in INSTALLED_APPS and
+      # nothing imports it — djoser only declares the dependency. Ignored by
+      # name rather than dropping the whole audit step, and revisit this list
+      # whenever djoser is upgraded.
+      - run: pip install pip-audit
+      - run: |
+          pip-audit -r requirements.txt             --ignore-vuln CVE-2026-57175             --ignore-vuln CVE-2026-57176             --ignore-vuln CVE-2026-57177             --ignore-vuln CVE-2026-57178             --ignore-vuln CVE-2026-57179
+
+      # Unused imports, undefined names, the things a reader skims past.
+      - run: pip install ruff && ruff check .
+
+      # A migration someone forgot to generate is a deploy that fails on the
+      # server instead of here. --check exits non-zero if the models and the
+      # migrations disagree.
+      - run: python manage.py makemigrations --check --dry-run
+
+      - run: python manage.py test
+
+      # The production security settings, verified under production settings.
+      - run: python manage.py check --deploy --fail-level ERROR
+        env:
+          DEBUG: "False"
+          ALLOWED_HOSTS: example.com
+
+      # Again with the account lockout on. AXES_ENABLED changes
+      # INSTALLED_APPS and AUTHENTICATION_BACKENDS at import time, so the
+      # only way to test it is a second run — and the lockout tests skip
+      # themselves in the first.
+      - run: python manage.py test
+        env:
+          AXES_ENABLED: "True"
+
+      - run: python manage.py check --deploy --fail-level ERROR
+        env:
+          DEBUG: "False"
+          ALLOWED_HOSTS: example.com
+          AXES_ENABLED: "True"
+
+  # Uncomment once the project has a frontend/ directory.
+  #
+  # Not guarded by `if: hashFiles(...)`: a job-level `if` is evaluated before
+  # the repository is checked out, so hashFiles sees an empty workspace and
+  # the job would be skipped even when a front end exists.
+  #
+  # frontend:
+  #   name: Frontend (types, lint, build)
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: frontend
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "20"
+  #         cache: npm
+  #         cache-dependency-path: frontend/package-lock.json
+  #
+  #     - run: npm ci
+  #     - run: npx eslint .
+  #     # tsc -b, then the production build — the same command deploy.sh
+  #     # runs, so a type error or a broken build fails here first.
+  #     - run: npm run build

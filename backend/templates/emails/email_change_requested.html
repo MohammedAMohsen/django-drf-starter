@@ -1,0 +1,9 @@
+{% extends "emails/base.html" %}
+{% block content %}
+  Someone asked to change the email address on your {{ site_name }} account
+  to <strong>{{ new_email }}</strong>.<br><br>
+  If that was you, open the confirmation link we sent to the new address —
+  nothing changes until you do.<br><br>
+  <strong>If it was not you, your account may be compromised.</strong> Change
+  your password immediately and contact support.
+{% endblock %}

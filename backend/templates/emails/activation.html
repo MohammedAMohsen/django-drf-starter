@@ -1,0 +1,6 @@
+{% extends "emails/base.html" %}
+{% block content %}
+  Welcome{% if name %}, {{ name }}{% endif %}.<br><br>
+  An account was created for this address on {{ site_name }}.
+  Confirm it to finish signing up.
+{% endblock %}

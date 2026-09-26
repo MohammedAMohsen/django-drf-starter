@@ -1,0 +1,14 @@
+[Unit]
+Description=MyProject nightly backup (database dump + off-server copy)
+After=postgresql.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=myproject
+Group=myproject
+ExecStart=/usr/bin/bash /srv/myproject/app/deploy/backup.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/srv/myproject

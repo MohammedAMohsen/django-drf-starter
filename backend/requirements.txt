@@ -1,0 +1,41 @@
+# Core
+Django==6.0.8              # 6.0.7 and older: PYSEC-2026-3717
+djangorestframework==3.17.2  # 3.17.1 bypassed DATA_UPLOAD_MAX_MEMORY_SIZE
+psycopg[binary]==3.3.5
+python-dotenv==1.2.2
+
+# Authentication
+djoser==2.3.3
+django-axes==8.3.1           # account lockout; inactive unless AXES_ENABLED=True
+djangorestframework_simplejwt==5.5.1
+PyJWT==2.13.0
+google-auth==2.56.3          # "Sign in with Google" token verification
+
+# API plumbing
+django-cors-headers==4.9.0
+django-filter==26.1
+drf-spectacular==0.30.0      # the OpenAPI schema at /api/schema/
+
+# Background work and cache
+celery==5.6.3
+redis==8.0.1
+hiredis==3.4.0               # C parser; makes redis noticeably faster
+django-redis==7.0.0
+
+# Files
+pillow==12.3.0               # image resizing in accounts/validators/image.py
+django-cleanup==9.0.0        # deletes the old file when an upload is replaced
+
+# Development
+django-extensions==4.1       # shell_plus, show_urls, graph_models
+django-silk==5.5.0           # the query profiler at /silk/ (DEBUG only)
+factory_boy==3.3.3
+Faker==40.36.0
+
+# Production
+gunicorn==26.2.0
+sentry-sdk[django]==2.70.0   # error reporting; inactive unless SENTRY_DSN is set
+
+# Useful, add when needed:
+# nh3                        # HTML sanitising for user-submitted rich text
+# django-storages[s3]        # media on object storage instead of local disk

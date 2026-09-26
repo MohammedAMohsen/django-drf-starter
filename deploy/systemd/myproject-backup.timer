@@ -1,0 +1,13 @@
+[Unit]
+Description=Run the MyProject backup every night
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+# Without a delay, every server that installed this file wakes its remote at
+# the same second.
+RandomizedDelaySec=10min
+# A night the server was off is made up for at the next boot.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
