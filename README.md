@@ -136,3 +136,13 @@ layer to learn first.
 
 Also absent: Docker, a split `settings/` package, WebSockets and advanced
 SEO. Add them when you actually need them.
+
+## Built with
+
+Django · Django REST Framework · djoser · SimpleJWT · Celery · Redis ·
+PostgreSQL · Pillow · django-axes · drf-spectacular · Sentry · gunicorn ·
+nginx · systemd · ruff · pip-audit · GitHub Actions
+
+## License
+
+MIT — see [LICENSE](LICENSE). Copy it, change it, ship it.
