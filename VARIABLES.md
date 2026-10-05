@@ -138,11 +138,13 @@ GROUP BY LOWER(email) HAVING COUNT(*) > 1;
 No rows? Add a data migration before `0005`:
 
 ```python
+from django.db.models.functions import Lower
+
+
 def lowercase_emails(apps, schema_editor):
     User = apps.get_model("accounts", "User")
-    for user in User.objects.exclude(email=models.F("email__lower")).iterator():
-        user.email = user.email.lower()
-        user.save(update_fields=["email"])
+    # One UPDATE; the database lowercases every address itself.
+    User.objects.update(email=Lower("email"))
 ```
 
 Rows returned? Merge the duplicate accounts by hand first — there is no safe

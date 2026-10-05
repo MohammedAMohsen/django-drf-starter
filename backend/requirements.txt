@@ -8,7 +8,7 @@ python-dotenv==1.2.2
 djoser==2.3.3
 django-axes==8.3.1           # account lockout; inactive unless AXES_ENABLED=True
 djangorestframework_simplejwt==5.5.1
-PyJWT==2.13.0
+PyJWT==2.15.1              # 2.13.0: thirteen advisories (PYSEC-2026-4140..4152)
 google-auth==2.56.3          # "Sign in with Google" token verification
 
 # API plumbing
